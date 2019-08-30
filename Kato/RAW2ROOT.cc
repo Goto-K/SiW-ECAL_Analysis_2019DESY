@@ -549,7 +549,7 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData, int bcid
 	chipID[chipid]=chipid;
 	numCol[chipid]= nColumns;
 
-	previousBCID = -999;
+	previousBCID = -1000;
 
 	int loopBCID = 0;
 	// now loop over the data, fill the charge values
@@ -558,8 +558,8 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData, int bcid
 	  //fill BCID
 	  bcid[chipid][ibc]=eventData[i-3-1*local_offset-ibc] & 0x0fff ;  // !!!   index to be verified   !!!
 
-	  if(bcid[chipid][ibc]-previousBCID < 0) loopBCID++;
-	  corrected_bcid[chipid][ibc] = bcid[chipid][ibc]+loopBCID*4096;
+	  if(bcid[chipid][ibc] > 0 && bcid[chipid][ibc]-previousBCID < 0) loopBCID++;
+	  if(bcid[chipid][ibc] > 0 ) corrected_bcid[chipid][ibc] = bcid[chipid][ibc]+loopBCID*4096;
 
 	  h_bcid[c]->Fill(bcid[chipid][ibc]);
 
@@ -590,9 +590,7 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData, int bcid
 	    if (ibc<MEMDEPTH && ichan<NCHANNELS){
 	      charge_high[chipid][ibc][ichan]=eventData[jj] & 0x0fff;
 	      gain_hit_high[chipid][ibc][ichan] = (eventData[jj] >> 12 ) & 0xf;
-	      if((gain_hit_high[chipid][ibc][ichan]==1 || gain_hit_high[chipid][ibc][ichan]==3) && charge_high[chipid][ibc][ichan]>0 ){ 
-	      // modified for auto-gain mode 04/07/2019
-	      //if(gain_hit_high[chipid][ibc][ichan]==1 && charge_high[chipid][ibc][ichan]>0 ){
+	      if(gain_hit_high[chipid][ibc][ichan]==1 && charge_high[chipid][ibc][ichan]>0 ){
 		count_hits++;
 	      }
 	    }  else {
@@ -634,75 +632,76 @@ int RAW2ROOT::readEvent(std::vector < unsigned short int > & eventData, int bcid
     if (chipID[k]>=0) {
       for (int ibc=0; ibc<numCol[k]; ibc++) {
 
-	// if sca+1 is filled with consec bcid, but sca+2 not, then badbcid[sca]==1 && badbcid[sca+1]==2 (bcid+1 issue, events are not bad, just the next sca is bad)
+	// if sca+1 is filled with consec bcid, but sca+2 not, then badbcid[sca]==1 && badbcid[sca+1]==2 (bcid+1 issue, events are not bad, just the next sca trigger is empty)
 	// if sca+1 is filled with consec bcid, and sca+2 also, then badbcid[sca]==3 && badbcid[sca+1]==3 (retriggering)
 	// if sca+1 is not filled with consec bcid,  badbcid==0
 
 	if(ibc==0) {
 	  badbcid[k][ibc]=0;
-	  int corri=corrected_bcid[k][ibc];
-	  
-	  if(corrected_bcid[k][ibc+1]>0 && corrected_bcid[k][ibc]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) {
-	    int corri1=corrected_bcid[k][ibc+1];
+	  int corr_bcid=corrected_bcid[k][ibc];
+	  int corr_bcid1=0;
+	  int corr_bcid2=0;
 
-	    if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) {
-	      int corri2=corrected_bcid[k][ibc+2];
-	      if( ( corri2-corri1) < bcidthres && (corri1-corri) < bcidthres) {
-		badbcid[k][ibc]=3;
-		badbcid[k][ibc+1]=3;
-		badbcid[k][ibc+2]=3;
-	      }
-	      if( ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) > 1 && (corri1-corri) <bcidthres) {
-		badbcid[k][ibc]=3;
-		badbcid[k][ibc+1]=3;
-	      }
-	      if( ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) ==1) {
-		badbcid[k][ibc]=1;
-		badbcid[k][ibc+1]=2;
-	      }
-	  } else {
-	      if( (corri1-corri) < bcidthres) {
-		badbcid[k][ibc]=3;
-		badbcid[k][ibc+1]=3;
-	      }
-	    } //ibc+2 if
-	  }//ibc+1 if
+	  if(corrected_bcid[k][ibc+1]>0 && corrected_bcid[k][ibc]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) 
+	    corr_bcid1=corrected_bcid[k][ibc+1];
+
+	  if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) 
+	    corr_bcid2=corrected_bcid[k][ibc+2];
+
+	  if(corr_bcid2>0) {
+	    //empty events
+	    if( ( corr_bcid2-corr_bcid1) >(bcidthres - 1) && (corr_bcid1-corr_bcid) ==1) {
+	      badbcid[k][ibc]=1;
+	      badbcid[k][ibc+1]=2;
+	    }
+	    // pure retriggers
+	    if( ( corr_bcid2-corr_bcid1) < bcidthres && (corr_bcid1-corr_bcid) < bcidthres) {
+	      badbcid[k][ibc]=3;
+	      badbcid[k][ibc+1]=3;
+	      badbcid[k][ibc+2]=3;
+	    }
+    	  }
+
+	  if( corr_bcid1 > 0 && (corr_bcid1-corr_bcid) > 1 && (corr_bcid1-corr_bcid) <bcidthres) {
+	    badbcid[k][ibc]=3;
+	    badbcid[k][ibc+1]=3;
+	  }  
 	} //ibc==0 if 
 
       if(ibc>0 && badbcid[k][ibc]<0 && corrected_bcid[k][ibc] >0 &&  (corrected_bcid[k][ibc]-corrected_bcid[k][ibc-1])>0 ) {
 	  badbcid[k][ibc]=0;
-	  int corri=corrected_bcid[k][ibc];
-	  int corriminus=corrected_bcid[k][ibc-1];
+	  int corr_bcid=corrected_bcid[k][ibc];
+	  int corr_bcidminus=corrected_bcid[k][ibc-1];
 
 	  if(corrected_bcid[k][ibc+1]>0 && (corrected_bcid[k][ibc+1]-corrected_bcid[k][ibc])>0) {
-	    int corri1=corrected_bcid[k][ibc+1];
+	    int corr_bcid1=corrected_bcid[k][ibc+1];
 
 	    if(corrected_bcid[k][ibc+2]>0 && (corrected_bcid[k][ibc+2]-corrected_bcid[k][ibc+1])>0) {
-	      int corri2=corrected_bcid[k][ibc+2];
-	      if( ( corri2-corri1) < bcidthres && (corri1-corri) < bcidthres) {
+	      int corr_bcid2=corrected_bcid[k][ibc+2];
+	      if( ( corr_bcid2-corr_bcid1) < bcidthres && (corr_bcid1-corr_bcid) < bcidthres) {
 		badbcid[k][ibc]=3;
 		badbcid[k][ibc+1]=3;
 		badbcid[k][ibc+2]=3;
 	      }
-	      if( (corri1-corri) < bcidthres && (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+	      if( (corr_bcid1-corr_bcid) < bcidthres && (corr_bcid-corr_bcidminus) < bcidthres ) badbcid[k][ibc]=3;
 
-	      if( badbcid[k][ibc]!=3 && ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) ==1) {
+	      if( badbcid[k][ibc]!=3 && ( corr_bcid2-corr_bcid1) >(bcidthres - 1) && (corr_bcid1-corr_bcid) ==1) {
 		badbcid[k][ibc]=1;
 		badbcid[k][ibc+1]=2;
 	      }
-	      if( badbcid[k][ibc]!=3 && ( corri2-corri1) >(bcidthres - 1) && (corri1-corri) > 1 && (corri1-corri) <bcidthres) {
+	      if( badbcid[k][ibc]!=3 && ( corr_bcid2-corr_bcid1) >(bcidthres - 1) && (corr_bcid1-corr_bcid) > 1 && (corr_bcid1-corr_bcid) <bcidthres) {
 		badbcid[k][ibc]=3;
 		badbcid[k][ibc+1]=3;
 	      }
-	      if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+	      if( (corr_bcid-corr_bcidminus) < bcidthres ) badbcid[k][ibc]=3;
 
-	      //if( badbcid[k][ibc-1]==1 && (corri1-corri) > (bcidthres - 1)) badbcid[k][ibc]=2;
+	      //if( badbcid[k][ibc-1]==1 && (corr_bcid1-corr_bcid) > (bcidthres - 1)) badbcid[k][ibc]=2;
 	    } else {
-	      if( (corri1-corri) < bcidthres ) badbcid[k][ibc]=3;
-	      if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+	      if( (corr_bcid1-corr_bcid) < bcidthres ) badbcid[k][ibc]=3;
+	      if( (corr_bcid-corr_bcidminus) < bcidthres ) badbcid[k][ibc]=3;
 	    } //ibc+2 if
 	  } else {
-	    if( (corri-corriminus) < bcidthres ) badbcid[k][ibc]=3;
+	    if( (corr_bcid-corr_bcidminus) < bcidthres ) badbcid[k][ibc]=3;
 	  }//ibc+1 if
 	} //ibc>0 if 
 
@@ -785,8 +784,7 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
 	gain_low[ibc][ichan]=(eventData[jj] >> 12 ) & 0xf;
 	int charge = int(eventData[jj] & 0x0fff);
 
-	if( gain_low[ibc][ichan] > 3 ) { // modified for auto-gain mode 04/07/2019
-	//if( gain_low[ibc][ichan] > 1 ) {
+	if( gain_low[ibc][ichan] > 1 ) {
 	  check_data=5; //extra bits
 	  if (_savelog) out_log << "<!> DataIntegrity ERROR <!> Extra bits in LOW GAIN " << ibc <<  " "<< gain_low[ibc][ichan] << endl;
 	  h_dataIntegrity_bcid->Fill(bcid); 
@@ -818,8 +816,7 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
 	gain_high[ibc][ichan] = (eventData[jj] >> 12 ) & 0xf;
 	int charge = int(eventData[jj] & 0x0fff);
 
-	if( gain_high[ibc][ichan] > 3 ) { // modified for auto-gain mode 04/07/2019
-	  //if( gain_high[ibc][ichan] > 1 ) {  
+	if( gain_high[ibc][ichan] > 1 ) {
 	  check_data=6; //extra bits
 	  if (_savelog) out_log << "<!> DataIntegrity ERROR <!> Extra bits in HIGH GAIN " << ibc << " "<< gain_high[ibc][ichan] << endl;
 	  h_dataIntegrity_bcid->Fill(bcid); 
@@ -858,7 +855,7 @@ int RAW2ROOT::data_integrity(std::vector < unsigned short int > & eventData, int
 void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileName, int bcidthres, int maxevt) {
 
   TString out_log_name = inputFileName+"_conversion.log";
-
+  
   if(_savelog) out_log.open(out_log_name.Data());
   
   if(_savelog) out_log <<endl;
@@ -957,9 +954,7 @@ void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileNa
 		      }
 		      for(int ibc=0; ibc<MEMDEPTH; ibc++) {
 			for( int ichan=0; ichan<NCHANNELS; ichan++){
-			  if((gain_hit_high[nc][ibc][ichan]==1 || gain_hit_high[nc][ibc][ichan]==3) && charge_high[nc][ibc][ichan]>NEGDATA_THR ){
-			  // modified for auto-gain mode 04/07/2019
-			  //if(gain_hit_high[nc][ibc][ichan]==1 && charge_high[nc][ibc][ichan]>NEGDATA_THR ){
+			  if(gain_hit_high[nc][ibc][ichan]==1 && charge_high[nc][ibc][ichan]>NEGDATA_THR ){
 			    h_hit_high[c]->Fill(ichan);
 			    h2_hits->Fill(info->GetX(c,ichan),info->GetY(c,ichan) );
 			    h2_hits_Acq->Fill(info->GetX(c,ichan),info->GetY(c,ichan) );
@@ -1007,6 +1002,9 @@ void RAW2ROOT::ReadFile(TString inputFileName, bool overwrite, TString outFileNa
 }
 
   //******************************************************************************************************************
+
+
+
 
 
 

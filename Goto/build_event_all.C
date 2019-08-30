@@ -231,16 +231,17 @@ void build_event_all(std::string str){
     }
 
     // merge bcid < 2
-    // Problem : bcid may be overlapping
     std::vector<std::vector<Int_t> > bcid_merge;
     bcid_merge.resize(4096);
     for(Int_t ibcid=1; ibcid<4095; ibcid++){
       if(!bcid_all[ibcid].empty()){
 	bcid_merge[ibcid] = bcid_all[ibcid];
-	if(!bcid_all[ibcid+1].empty()){
+	if(!bcid_all[ibcid+1].empty() && bcid_all[ibcid].size()>bcid_all[ibcid+1].size()){
 	  bcid_merge[ibcid].insert(bcid_merge[ibcid].end(), bcid_all[ibcid+1].begin(), bcid_all[ibcid+1].end());
-	  if(!bcid_all[ibcid-1].empty()){
+	  bcid_all[ibcid+1].clear();
+	  if(!bcid_all[ibcid-1].empty() && bcid_all[ibcid].size()>bcid_all[ibcid-1].size()){
 	    bcid_merge[ibcid].insert(bcid_merge[ibcid].begin(), bcid_all[ibcid-1].begin(), bcid_all[ibcid-1].end());
+	    bcid_all[ibcid-1].clear();
 	  }
 	}
       }
