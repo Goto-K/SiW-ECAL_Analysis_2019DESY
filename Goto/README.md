@@ -40,10 +40,16 @@ root -b -l -q ped_time_*.C+
 #### Analysis_Pedestal/Pedestal_Shift/
 pedestal difference between ADC mode and TDC mode (fast check)   
 the difference depend on memory cells   
-#### Analysis_Pedestal/Time_Dependance~/
+#### Analysis_Pedestal/Time_Dependances/
 time variation of pedestal and temperature  
-_goto : using the data at 24th June   
-_kato : using the data at 28th June   
+##### Analysis_Pedestal/Time_Dependances/Time_Dependance_goto
+using the data at 24th June   
+##### Analysis_Pedestal/Time_Dependances/Time_Dependance_kato
+using the data at 28th June   
+##### Analysis_Pedestal/Time_Dependances/Time_Dependance_lowgain
+using pedestal calculated by charge_lowGain of ADC mode  
+##### Analysis_Pedestal/Time_Dependances/Time_Dependance_rela and slide
+pedestal and temperature   
 
 ### Analysis_Shower/
 run_42003 : Shower sample data with LAL  
