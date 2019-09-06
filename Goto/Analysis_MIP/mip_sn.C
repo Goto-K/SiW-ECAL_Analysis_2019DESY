@@ -34,7 +34,7 @@ void mip_sn(){
   Double_t mip_error[5][16][64] = {0};
   Double_t mip_chi2ndf[5][16][64] = {0};
 
-  TString mip_path = "./Slab_Result/mip_mean.txt";
+  TString mip_path = "./MIP_Map/mip_mean.txt";
   std::ifstream reading_mip(mip_path, std::ios::in);
   if(!reading_mip){
     cout << "mip_mean.txt is not found" << endl;

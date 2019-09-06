@@ -19,18 +19,31 @@ root -b -l -q mip_chip.C+'(".../run_XXXXX_merge.root")'
 root -b -l -q mip_map.C+  
 root -b -l -q mip_merge.C+'(".../run_XXXXX_merge.root")'  
 root -b -l -q mip_merge_range.C+'(".../run_XXXXX_merge.root")'  
-#### Analysis_MIP/Channel_Result/
-#### Analysis_MIP/Chip_Result/ (by mip_chip.C)
 #### Analysis_MIP/MIP_Map/ (by mip_map.C)
 mip_mean_chip.txt : MIP mean information (slab chip channel mip_mean mip_chi mip_ndf)   
 MIP_Map.root : MIP information in Tree (mip_mean, mip_chi2ndf)
+#### Analysis_MIP/Result/
+each analysis result for MIP mean  
+##### Analysis_MIP/Result/Slab_Result/ 
+##### Analysis_MIP/Result/Chip_Result/
+##### Analysis_MIP/Result/Channel_Result/ 
+#### Analysis_MIP/S_over_N_ratio/ (by mip_sn.C)
+S/N ratio with fllowing cutting conditions,   
+mip chi2/ndf < 3   
+mip mean > 100 (650 µm)   
+mip mean > 50 (320 µm)   
 
 ### Analysis_Pedestal/
 root -b -l -q ped_memory.C+'(".../run_XXXXX_merge.root")'  
 root -b -l -q ped_time_*.C+  
-#### Analysis_MIP/Memory_Result/
+#### Analysis_Pedestal/Memory_Result/
+#### Analysis_Pedestal/Pedestal_Shift/
+pedestal difference between ADC mode and TDC mode (fast check)   
+the difference depend on memory cells   
 #### Analysis_Pedestal/Time_Dependance~/
 time variation of pedestal and temperature  
+_goto : using the data at 24th June   
+_kato : using the data at 28th June   
 
 ### Analysis_Shower/
 run_42003 : Shower sample data with LAL  
