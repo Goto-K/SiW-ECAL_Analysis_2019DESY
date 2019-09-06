@@ -1,0 +1,5 @@
+slab 0 S/N ratio : 48.9911 for 384 channels
+slab 1 S/N ratio : 48.9333 for 396 channels
+slab 2 S/N ratio : 21.657 for 793 channels
+slab 3 S/N ratio : 50.2331 for 477 channels
+slab 4 S/N ratio : 47.5029 for 357 channels
